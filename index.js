@@ -29,6 +29,7 @@ module.exports = class BluetoothSwarm extends ReadyResource {
     this._opts = opts
     this._backend = opts.backend !== undefined ? opts.backend : loadBackend()
     this._online = opts.online === true
+    this._gen = 0
   }
 
   get supported() {
@@ -54,21 +55,30 @@ module.exports = class BluetoothSwarm extends ReadyResource {
     return { state: this.state, peers: this.peers }
   }
 
+  // Always a fresh transport: resuming managers that lived through a radio
+  // cycle revives wedged native state — new manager objects are the one
+  // reliable reset, so the toggle is the ultimate manual heal.
   async start() {
     if (!this.supported || this.started || this.closing || this.closed) return
     this.started = true
-    if (this.transport) {
-      this.transport.resume()
-    } else {
-      this.transport = this._createTransport()
-      await this.transport.ready()
-    }
+    this._abandon()
+    this.transport = this._createTransport()
+    await this.transport.ready()
     this.emit('update')
   }
 
+  _abandon() {
+    const old = this.transport
+    if (!old) return
+    this.transport = null
+    old.suspend().catch(safetyCatch)
+  }
+
   _createTransport() {
+    const gen = ++this._gen
     const transport = new BLETransport({
       ...this._opts,
+      gen,
       backend: this._backend,
       online: this._online,
       onconnection: (conn) => this.emit('connection', conn)
@@ -82,8 +92,7 @@ module.exports = class BluetoothSwarm extends ReadyResource {
   // (never destroy: native double-free) and start over with fresh ones.
   async _rebuild(old) {
     if (this.transport !== old || this.closing || this.closed) return
-    old.suspend().catch(safetyCatch)
-    this.transport = null
+    this._abandon()
     if (this.started) {
       this.transport = this._createTransport()
       await this.transport.ready().catch(safetyCatch)
@@ -94,7 +103,7 @@ module.exports = class BluetoothSwarm extends ReadyResource {
   async stop() {
     if (!this.started) return
     this.started = false
-    if (this.transport) await this.transport.suspend()
+    this._abandon()
     this.emit('update')
   }
 

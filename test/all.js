@@ -97,7 +97,7 @@ test('stop drops links fast and start reuses the same transport', async (t) => {
 
   await a.start()
   await b.start()
-  t.is(a.transport, transport, 'radio managers are reused, never recreated')
+  t.not(a.transport, transport, 'toggle builds fresh managers')
   await linked(a, b)
   t.pass('relinked after toggle')
 })
