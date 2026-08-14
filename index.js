@@ -1,4 +1,5 @@
 const ReadyResource = require('ready-resource')
+const safetyCatch = require('safety-catch')
 
 const BLETransport = require('./lib/transport')
 
@@ -59,14 +60,33 @@ module.exports = class BluetoothSwarm extends ReadyResource {
     if (this.transport) {
       this.transport.resume()
     } else {
-      this.transport = new BLETransport({
-        ...this._opts,
-        backend: this._backend,
-        online: this._online,
-        onconnection: (conn) => this.emit('connection', conn)
-      })
-      this.transport.on('update', () => this.emit('update'))
+      this.transport = this._createTransport()
       await this.transport.ready()
+    }
+    this.emit('update')
+  }
+
+  _createTransport() {
+    const transport = new BLETransport({
+      ...this._opts,
+      backend: this._backend,
+      online: this._online,
+      onconnection: (conn) => this.emit('connection', conn)
+    })
+    transport.on('update', () => this.emit('update'))
+    transport.on('radio-cycled', () => this._rebuild(transport))
+    return transport
+  }
+
+  // A radio power cycle wedges the surviving native managers — abandon them
+  // (never destroy: native double-free) and start over with fresh ones.
+  async _rebuild(old) {
+    if (this.transport !== old || this.closing || this.closed) return
+    old.suspend().catch(safetyCatch)
+    this.transport = null
+    if (this.started) {
+      this.transport = this._createTransport()
+      await this.transport.ready().catch(safetyCatch)
     }
     this.emit('update')
   }
