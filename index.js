@@ -3,6 +3,8 @@ const safetyCatch = require('safety-catch')
 
 const BLETransport = require('./lib/transport')
 
+const IS_DARWIN = typeof Bare !== 'undefined' && Bare.platform === 'darwin'
+
 function loadBackend() {
   try {
     return require('bare-bluetooth')
@@ -77,7 +79,12 @@ module.exports = class BluetoothSwarm extends ReadyResource {
     const old = this.transport
     if (!old) return
     this.transport = null
-    old.suspend().catch(safetyCatch)
+    old
+      .suspend()
+      .catch(safetyCatch)
+      .then(() => {
+        if (IS_DARWIN) old.destroyManagers()
+      })
   }
 
   _createTransport() {
