@@ -155,13 +155,16 @@ test('relinks after a radio power cycle', async (t) => {
   a.transport.central.emit('stateChange', 'poweredOff')
   await until(a, () => a.peers === 0)
 
-  // radio returns: the transport must re-add the service, re-advertise and
-  // re-scan without an app-level toggle
+  // radio returns: the facade must abandon the wedged managers, build a
+  // fresh transport and relink without an app-level toggle
+  const wedged = a.transport
   a.transport.server.state = 'poweredOn'
   a.transport.server.emit('stateChange', 'poweredOn')
   a.transport.central.state = 'poweredOn'
   a.transport.central.emit('stateChange', 'poweredOn')
 
+  await until(a, () => a.transport && a.transport !== wedged)
+  t.not(a.transport, wedged, 'transport rebuilt with fresh managers')
   await linked(a, b)
   t.pass('relinked after power cycle')
 })
