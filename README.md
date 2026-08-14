@@ -1,4 +1,4 @@
-# keet-bluetooth
+# ble-swarm
 
 Hyperswarm-shaped swarm over Bluetooth LE. Nearby peers discover each other by
 advertising and scanning a topic-derived GATT service UUID, speak a framed byte
@@ -7,7 +7,7 @@ as Noise-encrypted duplex streams — the same shape hyperswarm emits, so a BLE
 link can be fed straight into corestore replication.
 
 ```
-npm install keet-bluetooth
+npm install ble-swarm
 ```
 
 Built on [bare-bluetooth](https://github.com/holepunchto/bare-bluetooth):
@@ -17,7 +17,7 @@ reports `unsupported`.
 ## Usage
 
 ```js
-const BluetoothSwarm = require('keet-bluetooth')
+const BluetoothSwarm = require('ble-swarm')
 
 const bt = new BluetoothSwarm({ keyPair, topic })
 
