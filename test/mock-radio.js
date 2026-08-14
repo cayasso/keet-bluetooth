@@ -66,6 +66,7 @@ function makeMockBluetooth({ mtu: maxMtu = DEFAULT_MTU } = {}) {
     stopAdvertising() {
       advertisers.delete(this)
     }
+    destroy() {}
     respondToRequest(req, _status, _data) {
       const p = req && req._peripheral
       if (p) queueMicrotask(() => p.emit('write', p._char || null))
@@ -151,6 +152,7 @@ function makeMockBluetooth({ mtu: maxMtu = DEFAULT_MTU } = {}) {
       if (!server) return
       queueMicrotask(() => this.emit('connect', new Peripheral(server)))
     }
+    destroy() {}
     disconnect(peripheral) {
       if (peripheral && peripheral._server) peripheral._server._subscribers.delete(peripheral)
       queueMicrotask(() => this.emit('disconnect', peripheral || null))

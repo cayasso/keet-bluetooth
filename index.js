@@ -1,17 +1,12 @@
 const ReadyResource = require('ready-resource')
 const safetyCatch = require('safety-catch')
+const { isMac } = require('which-runtime')
 
 const BLETransport = require('./lib/transport')
 
-const IS_DARWIN = typeof Bare !== 'undefined' && Bare.platform === 'darwin'
-
-function loadBackend() {
-  try {
-    return require('bare-bluetooth')
-  } catch {
-    return null // no BLE backend on this platform → 'unsupported'
-  }
-}
+// the #bluetooth import map resolves bare-bluetooth on supported platforms
+// and a null stub everywhere else
+const backend = require('#bluetooth')
 
 /**
  * Hyperswarm-shaped swarm over Bluetooth LE. Construct once and toggle with
@@ -29,7 +24,7 @@ module.exports = class BluetoothSwarm extends ReadyResource {
     this.started = false
     this.transport = null
     this._opts = opts
-    this._backend = opts.backend !== undefined ? opts.backend : loadBackend()
+    this._backend = opts.backend !== undefined ? opts.backend : backend
     this._online = opts.online === true
     this._gen = 0
   }
@@ -83,7 +78,7 @@ module.exports = class BluetoothSwarm extends ReadyResource {
       .suspend()
       .catch(safetyCatch)
       .then(() => {
-        if (IS_DARWIN) old.destroyManagers()
+        if (isMac) old.destroyManagers()
       })
   }
 

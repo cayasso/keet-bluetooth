@@ -23,9 +23,18 @@
     "hypercore-crypto": "^3.7.0",
     "ready-resource": "^1.2.0",
     "safety-catch": "^1.0.3",
-    "streamx": "^2.28.0"
+    "streamx": "^2.28.0",
+    "which-runtime": "^1.4.0"
   },
   "devDependencies": {
     "brittle": "^4.1.0"
+  },
+  "imports": {
+    "#bluetooth": {
+      "android": "bare-bluetooth",
+      "darwin": "bare-bluetooth",
+      "ios": "bare-bluetooth",
+      "default": "./lib/unsupported.js"
+    }
   }
 }
