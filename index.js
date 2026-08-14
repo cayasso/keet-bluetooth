@@ -55,15 +55,21 @@ module.exports = class BluetoothSwarm extends ReadyResource {
     return { state: this.state, peers: this.peers }
   }
 
-  // Always a fresh transport: resuming managers that lived through a radio
-  // cycle revives wedged native state — new manager objects are the one
-  // reliable reset, so the toggle is the ultimate manual heal.
+  // One service per process: managers are reused across toggles (there is no
+  // removeService, and an abandoned manager's service lingers in the shared
+  // GATT db, capturing dialers). Only after a radio power cycle — which wipes
+  // the db — is a rebuild with fresh managers safe (and necessary: cycled
+  // managers wedge).
   async start() {
     if (!this.supported || this.started || this.closing || this.closed) return
     this.started = true
-    this._abandon()
-    this.transport = this._createTransport()
-    await this.transport.ready()
+    if (this.transport && !this.transport.radioCycled) {
+      this.transport.resume()
+    } else {
+      this._abandon()
+      this.transport = this._createTransport()
+      await this.transport.ready()
+    }
     this.emit('update')
   }
 
@@ -103,7 +109,7 @@ module.exports = class BluetoothSwarm extends ReadyResource {
   async stop() {
     if (!this.started) return
     this.started = false
-    this._abandon()
+    if (this.transport) await this.transport.suspend()
     this.emit('update')
   }
 

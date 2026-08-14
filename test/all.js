@@ -97,7 +97,7 @@ test('stop drops links fast and start reuses the same transport', async (t) => {
 
   await a.start()
   await b.start()
-  t.not(a.transport, transport, 'toggle builds fresh managers')
+  t.is(a.transport, transport, 'toggle reuses the managers — one service per process')
   await linked(a, b)
   t.pass('relinked after toggle')
 })
