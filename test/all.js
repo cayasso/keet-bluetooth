@@ -124,3 +124,17 @@ test('missing backend reports unsupported and start is a safe no-op', async (t) 
   t.is(bt.state, 'unsupported')
   t.is(bt.peers, 0)
 })
+
+test('connections exposes the live noise streams', async (t) => {
+  const backend = makeMockBluetooth()
+  const a = createSwarm(t, backend)
+  const b = createSwarm(t, backend)
+
+  await a.start()
+  await b.start()
+  await linked(a, b)
+
+  const conns = [...a.connections]
+  t.is(conns.length, 1)
+  t.ok(b4a.equals(conns[0].remotePublicKey, link(b).publicKey))
+})

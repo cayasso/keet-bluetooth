@@ -44,6 +44,11 @@ module.exports = class BluetoothSwarm extends ReadyResource {
     return this.transport ? this.transport.linkCount : 0
   }
 
+  // live NoiseSecretStreams, hyperswarm-style
+  get connections() {
+    return this.transport ? this.transport.peers.values() : [].values()
+  }
+
   status() {
     return { state: this.state, peers: this.peers }
   }
