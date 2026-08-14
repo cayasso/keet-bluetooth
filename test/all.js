@@ -138,3 +138,30 @@ test('connections exposes the live noise streams', async (t) => {
   t.is(conns.length, 1)
   t.ok(b4a.equals(conns[0].remotePublicKey, link(b).publicKey))
 })
+
+test('relinks after a radio power cycle', async (t) => {
+  const backend = makeMockBluetooth()
+  const a = createSwarm(t, backend)
+  const b = createSwarm(t, backend)
+
+  await a.start()
+  await b.start()
+  await linked(a, b)
+
+  // radio dies: service, advertising, scans and links all invalidated
+  a.transport.server.state = 'poweredOff'
+  a.transport.server.emit('stateChange', 'poweredOff')
+  a.transport.central.state = 'poweredOff'
+  a.transport.central.emit('stateChange', 'poweredOff')
+  await until(a, () => a.peers === 0)
+
+  // radio returns: the transport must re-add the service, re-advertise and
+  // re-scan without an app-level toggle
+  a.transport.server.state = 'poweredOn'
+  a.transport.server.emit('stateChange', 'poweredOn')
+  a.transport.central.state = 'poweredOn'
+  a.transport.central.emit('stateChange', 'poweredOn')
+
+  await linked(a, b)
+  t.pass('relinked after power cycle')
+})
